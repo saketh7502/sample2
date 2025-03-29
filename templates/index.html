@@ -3,36 +3,75 @@
 {% block title %}SQL Injection Challenges{% endblock %}
 
 {% block content %}
-<h1>Welcome to CTF Challenge</h1>
-<h2>Challenges</h2>
-<p>Below are the vulnerabilities in this application. Exploit them to reveal hidden flags!</p>
+<h1>MegaCorp's Security Operations Challenge</h1>
+<!-- Example "world building" placeholder -->
+<p>Welcome to MegaCorp's Security Operations Challenge where you've been brought in as an external red team consultant. MegaCorp has just discovered a suite of potential vulnerabilities scattered across their corporate web apps, internal APIs, and backend servers. Your task is to breach the system to demonstrate the need for better security controls</p>
 
-<table class="table table-bordered">
+
+<h2>Challenges</h2>
+{% if condition == 0 %}
+    <p>You're handed a raw, unannotated list of suspected vulnerabilities found during a rushed in-house scan.</p>
+{% elif condition == 1 %}
+    <p>MegaCorp has begun rolling out a newly purchased vulnerability management platform. As part of the platform's output, each vulnerability is labeled with an official CVSS score and a color-coded severity.</p>
+{% endif %}
+
+
+<table class="table table-bordered mt-3">
     <thead class="table-dark">
         <tr>
-            <th>Endpoint</th>
-            <th>Vulnerability Name</th>
-            <th>Description</th>
-            <th>CVSS Score</th>
+            <th scope="col">Endpoint</th>
+            <th scope="col">Vulnerability Location</th>
+            <th scope="col">Description</th>
+            <!-- Only show CVSS & Severity in treatment condition -->
+            {% if condition == 1 %}
+                <th scope="col">CVSS Score</th>
+                <th scope="col">Severity</th>
+            {% endif %}
+            
         </tr>
     </thead>
     <tbody>
         {% for challenge in challenges %}
-        <tr class="table-light">
-            <td><a href="{{ challenge.endpoint }}">{{ challenge.endpoint }}</a></td>
+        {# Dynamically color the row if in treatment mode based on severity #}
+        {% set row_class = '' %}
+        {% if condition == 1 %}
+            {% if challenge.severity == 'Very High' %}
+                {% set row_class = 'table-high-medium' %}
+            {% elif challenge.severity == 'High' %}
+                {% set row_class = 'table-danger' %}
+            {% elif challenge.severity == 'Medium' %}
+                {% set row_class = 'table-warning' %}
+            {% else %}
+                {% set row_class = 'table-success' %}
+            {% endif %}
+        {% else %}
+            {% set row_class = 'table-light' %}
+        {% endif %}
+        
+        <tr class="{{ row_class }}">
+            <td>
+                <a href="{{ challenge.endpoint }}">
+                    {{ challenge.endpoint }}
+                </a>
+            </td>
             <td>{{ challenge.name }}</td>
             <td>{{ challenge.description }}</td>
-            <td>{{ challenge.cvss }}</td>
+            
+            {% if condition == 1 %}
+                <td>{{ challenge.cvss }}</td>
+                <td>{{ challenge.severity }}</td>
+            {% endif %}
+            
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
 <div class="card mt-4">
-    <div class="card-header bg-dark text-white">
-        <h3>SQL Injection Tips</h3>
+    <div class="card-header bg-dark text-white" id="hintHeader" style="cursor: pointer;" onclick="toggleHints()">
+        <h3>Need a hint? <span class="float-end" id="toggleIcon">+</span></h3>
     </div>
-    <div class="card-body">
+    <div class="card-body" id="hintBody" style="display: none;">
         <ul>
             <li><code>' OR 1=1 --</code> to test if it is vulnerable</li>
             <li><code>' UNION SELECT sqlite_version() --</code> to verify which database type</li>
@@ -48,4 +87,19 @@
         </ul>
     </div>
 </div>
+
+<script>
+    function toggleHints() {
+        const hintBody = document.getElementById('hintBody');
+        const toggleIcon = document.getElementById('toggleIcon');
+        
+        if (hintBody.style.display === 'none') {
+            hintBody.style.display = 'block';
+            toggleIcon.textContent = '−';  // Unicode minus sign
+        } else {
+            hintBody.style.display = 'none';
+            toggleIcon.textContent = '+';
+        }
+    }
+</script>
 {% endblock %}

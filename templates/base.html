@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +9,27 @@
         .navbar { background-color: #212529; }
         .navbar-brand, .nav-link { color: white; }
         .nav-link:hover { color: #ccc; }
+
+        /* Custom table class between danger and warning */
+        .table-high-medium {
+            --bs-table-color: #332020;
+            --bs-table-bg: #ffb699;
+            --bs-table-border-color: #e5a489;
+            --bs-table-striped-bg: #f2ac91;
+            --bs-table-striped-color: #332020;
+            --bs-table-active-bg: #e5a489;
+            --bs-table-active-color: #332020;
+            --bs-table-hover-bg: #eaa88c;
+            --bs-table-hover-color: #332020;
+            color: var(--bs-table-color);
+            border-color: var(--bs-table-border-color);
+            background-color: var(--bs-table-bg);
+        }
+
+        /* Add the same styling for table-responsive context */
+        .table-responsive>.table-high-medium {
+            background-color: var(--bs-table-bg);
+        }
     </style>
     {% block styles %}{% endblock %}
 </head>

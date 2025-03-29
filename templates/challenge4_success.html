@@ -4,5 +4,25 @@
 
 {% block content %}
 <h1>Challenge 4: Login Successful</h1>
-<p class="alert alert-success">Flag: {{ flag }}</p>
+
+<div class="alert alert-success">
+  <h3>Flag: {{ flag }}</h3>
+</div>
+
+<div class="card mt-1 border-danger">
+  <div class="card-header bg-danger text-white">
+      <h4 class="mb-0">IMPORTANT: Study Compensation Information</h4>
+  </div>
+  <div class="card-body">
+      <div class="alert alert-danger mb-3">
+          <strong>Copy the text below to Qualtrics to get compensation for this challenge.</strong>
+      </div>
+      
+      <pre class="bg-light p-3 border rounded">{{ qualtrics_data }}</pre>
+      
+      <div class="alert alert-danger mt-3">
+          <strong>Copy the text above to Qualtrics to get compensation for this challenge.</strong>
+      </div>
+  </div>
+</div>
 {% endblock %}

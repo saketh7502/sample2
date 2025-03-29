@@ -1,15 +1,45 @@
-from flask import Flask, request, render_template, g
-from flask_bootstrap import Bootstrap5
+from flask import Flask, request, render_template, g, redirect, url_for, session
 import sqlite3
 import os
+import random  # Add this import for randomization
+from flask_bootstrap import Bootstrap5
+from datetime import datetime
+import argparse
 
 app = Flask(__name__)
-bootstrap = Bootstrap5(app)
+app.secret_key = 'some_random_secret_key'  # Needed if you use session
+bootstrap = Bootstrap5(app)  # Initialize Bootstrap
+
+# Parse command line arguments
+parser = argparse.ArgumentParser(description='SQL Injection Challenge Application')
+parser.add_argument('--treatment', action='store_true', help='Enable treatment condition')
+args = parser.parse_args()
+
+# Set condition based on arguments
+condition = 1 if args.treatment else 0
+
+# Get condition from environment variable
+condition = 1 if os.environ.get('TREATMENT', '').lower() in ('true', '1', 'yes') else 0
 
 # Database directory
 DB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database')
 if not os.path.exists(DB_DIR):
     os.makedirs(DB_DIR)
+
+TREATMENT = 1
+
+def format_qualtrics_data(qualtrics_data):
+    """Format just the data portion of the qualtrics display"""
+    data_str = "--- Study Data ---\n"
+    for key, value in qualtrics_data.items():
+        data_str += f"{key}: {value}\n"
+    return data_str
+
+def generate_qualtrics_data(problem):
+    return {
+        'condition': 1 if TREATMENT else 0,
+        "problem": problem
+    }
 
 # Database initialization
 def init_dbs():
@@ -67,6 +97,10 @@ def init_dbs():
     conn.commit()
     conn.close()
 
+    qualtrics_data = {
+            'condition': 1 if TREATMENT else 0
+        }
+
 init_dbs()
 
 # Database helpers
@@ -84,16 +118,98 @@ def close_connection(exception):
         if db is not None:
             db.close()
 
-# Home page
 @app.route('/')
-def index():
+def index():  
+    # Hard-coded "challenges" (vulnerabilities) with CVSS & severity
+    # severity can be a short label like "High", "Medium", "Low"
     challenges = [
-        {"endpoint": "/challenge1", "name": "Basic UNION-based Injection", "description": "SQL injection vulnerability allowing extraction of data through UNION queries.", "cvss": "6.5"},
-        {"endpoint": "/challenge2", "name": "Multi-Column UNION Injection", "description": "Advanced SQL injection requiring matching multiple columns in UNION statements.", "cvss": "7.8"},
-        {"endpoint": "/challenge3", "name": "UNION Injection with WHERE clause", "description": "SQL injection in a search feature with filtering mechanisms.", "cvss": "6.3"},
-        {"endpoint": "/challenge4", "name": "Login Form SQL Injection", "description": "Authentication bypass vulnerability in the login system.", "cvss": "8.2"}
+        {
+            "id": 1,
+            "endpoint": "/challenge1",
+            "name": "IT Department Endpoint",
+            "description": "Could we use the UNION operator?",
+            "cvss": round(random.uniform(6,7.99), 1),
+            "severity": "High"
+        },
+        {
+            "id": 2,
+            "endpoint": "/challenge2",
+            "name": "Root Credentials DB",
+            "description": "I wonder what happens if multiple columns are matched with the UNION operator...",
+            "cvss": round(random.uniform(8,10), 1),
+            "severity": "Very High"
+        },
+        {
+            "id": 3,
+            "endpoint": "/challenge3",
+            "name": "Logs Endpoint",
+            "description": "WHERE could we possibly use this?",
+            "cvss": round(random.uniform(2,3.99), 1),
+            "severity": "Low"
+        },
+        {
+            "id": 4,
+            "endpoint": "/challenge4",
+            "name": "Mailserver Endpoint",
+            "description": "If you forgot your password, could they tell you what it is?",
+            "cvss":  round(random.uniform(4,5.99), 1),
+            "severity": "Medium"
+        }
     ]
-    return render_template('index.html', challenges=challenges)
+    if condition is not TREATMENT:
+        random.shuffle(challenges)
+    else:
+        challenges = sorted(challenges, key=lambda x: x['cvss'], reverse=True)
+
+    session['challenges'] = challenges
+
+    # Optional: store condition in session if you want to keep it for the user
+    session['condition'] = condition
+
+    # This text acts as a placeholder for "world building" or narrative.
+    story_intro = (
+        "Welcome to MegaCorp's Security Operations Challenge (CTF)!\n"
+        "In this scenario, you've been brought in to demonstrate the "
+        "exploitation of potential vulnerabilities. Pick a vulnerability "
+        "and attempt to exploit it."
+    )
+
+    return render_template('index.html',
+                           condition=condition,
+                           challenges=challenges,
+                           story_intro=story_intro)
+
+@app.route('/select/<int:challenge_id>', methods=['POST'])
+def select_challenge(challenge_id):
+    """
+    Logs the participant's selection to the DB with 
+    participant_id (for demonstration, use a random or session-based ID),
+    and condition.
+    """
+    # In a real scenario, you'd have an actual participant ID
+    participant_id = request.remote_addr  # e.g. just IP for demonstration
+
+    # Find the chosen vulnerability name (in a real scenario, store them in DB)
+    vulnerabilities = {
+        1: "Basic UNION-based Injection",  
+        2: "Multi-Column UNION Injection",
+        3: "UNION Injection with WHERE clause",
+        4: "Login Form SQL Injection"
+    }
+    chosen_vuln = vulnerabilities.get(challenge_id, "Unknown")
+
+    # Insert selection into main.db -> selections table
+    conn = sqlite3.connect(os.path.join(DB_DIR, 'main.db'))
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO selections (participant_id, condition, vulnerability_name, chosen_at)
+        VALUES (?, ?, ?, ?)
+    ''', (participant_id, condition, chosen_vuln, datetime.now()))
+    conn.commit()
+    conn.close()
+
+    # Redirect user to the chosen challenge or somewhere else
+    return redirect(url_for(f'challenge{challenge_id}'))
 
 # Challenge 1: Basic UNION-based Injection
 @app.route('/challenge1', methods=['GET', 'POST'])
@@ -105,7 +221,7 @@ def challenge1():
         db = get_db('main')
         cur = db.execute(query)
         result = cur.fetchall()
-    return render_template('challenge1.html', result=result)
+    return render_template('challenge1.html', result=result, qualtrics_data=format_qualtrics_data(generate_qualtrics_data("problem 1")))
 
 # Challenge 2: Multi-Column UNION Injection
 @app.route('/challenge2', methods=['GET', 'POST'])
@@ -120,7 +236,7 @@ def challenge2():
             result = cur.fetchall()
         except sqlite3.Error as e:
             result = [f"Error: {str(e)}"]
-    return render_template('challenge2.html', result=result)
+    return render_template('challenge2.html', result=result, qualtrics_data=format_qualtrics_data(generate_qualtrics_data("problem 2")))
 
 # Challenge 3: UNION Injection with WHERE clause
 @app.route('/challenge3', methods=['GET', 'POST'])
@@ -135,9 +251,9 @@ def challenge3():
             result = cur.fetchall()
         except sqlite3.Error as e:
             result = [f"Error: {str(e)}"]
-    return render_template('challenge3.html', result=result)
+    return render_template('challenge3.html', result=result, qualtrics_data=format_qualtrics_data(generate_qualtrics_data("problem 3")))
 
-# Challenge 4: Login Form and Forgot Password
+# Challenge 4: Login Form
 @app.route('/challenge4', methods=['GET', 'POST'])
 def challenge4():
     message = ''
@@ -158,12 +274,12 @@ def challenge4():
             flag_query = "SELECT flag FROM flags WHERE id = 1"
             cur = db.execute(flag_query)
             flag_result = cur.fetchone()
-            return render_template('challenge4_success.html', flag=flag_result[0])
+            return render_template('challenge4_success.html', flag=flag_result[0], qualtrics_data=format_qualtrics_data(generate_qualtrics_data("problem 4")))
         else:
             message = "Invalid credentials"
             message_class = "danger"
 
-    return render_template('challenge4.html', message=message, message_class=message_class)
+    return render_template('challenge4.html', message=message, message_class=message_class, qualtrics_data=format_qualtrics_data(generate_qualtrics_data("problem 4")))
 
 @app.route('/challenge4/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
@@ -191,7 +307,7 @@ def forgot_password():
             message = f"Error: {str(e)}"
             message_class = "danger"
 
-    return render_template('forgot_password.html', message=message, message_class=message_class)
+    return render_template('forgot_password.html', message=message, message_class=message_class, qualtrics_data=format_qualtrics_data(generate_qualtrics_data("problem 4")))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=True)
